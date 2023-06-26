@@ -5,7 +5,7 @@ import {Vertice} from './vertice.js';
 
 class Poligono{
     #vertices;
-    constructor(vertices){
+    constructor(...vertices){
       if(vertices.length < 3){
         throw new Error("O polígono deve ter pelo menos 3 vértices");
       }
@@ -43,6 +43,7 @@ let x;
 let y;
 let vertices = [];
 do{
+  let i = vertices.length;
     do{
         x = prompt(`Digite o valor de x do vértice ${i + 1}: `);
     }while(isNaN(x));
@@ -52,8 +53,9 @@ do{
     vertices.push(new Vertice(Number(x),Number(y)));
     y = prompt("Deseja adicionar mais um vértice? (s/n)");
 }while(y === 's' || y === 'S');
-let poligono = new Poligono(vertices);
+console.log(...vertices)
+let poligono = new Poligono(...vertices);
 console.log(`O perímetro do polígono é: ${poligono.perimetro}`);
 console.log(`O polígono tem ${poligono.qtdVertices} vértices`);
-console.log(`Adicionando o vértice vertice1 ao polígono: ${poligono.addVertice(vertice1)}`);
+console.log(`Adicionando o vértice vertice1 ao polígono: ${poligono.addVertice(vertices[0])}`);
 console.log(`O polígono tem ${poligono.qtdVertices} vértices`);

@@ -70,13 +70,11 @@ class Triangulo {
         return Math.sqrt(s * (s - a) * (s - b) * (s - c));
     }
 }
-
 console.log("Digite os vértices dos triângulos: ")
 let x;
 let y;
-let vertices1 = [];
-let vertices2 = [];
-for(let j = 0; j < 2; j++){
+let vertices = [];
+for(let j = 0; j < 3; j++){
     for(let i = 0; i < 3; i++){
         do{
             x = prompt(`Digite o valor de x do vértice ${i + 1} do ${j+1} triângulo: `);
@@ -84,21 +82,21 @@ for(let j = 0; j < 2; j++){
         do{
             y = prompt(`Digite o valor de y do vértice ${i + 1} do ${j+1} triângulo: `);
         }while(isNaN(y));
-        if(j === 0){
-            vertices1.push(new Vertice(Number(x),Number(y)));
-        }else{
-            vertices2.push(new Vertice(Number(x),Number(y)));
-        }
+        vertices.push(new Vertice(Number(x),Number(y)));
     }
 }
-let [vertice11,vertice12,vertice13] = vertices1;
-let [vertice21,vertice22,vertice23] = vertices2;
-let triangulo1 = new Triangulo(vertice11,vertice12,vertice13);
-let triangulo2 = new Triangulo(vertice21,vertice22,vertice23);
+let [v11,v12,v13,v21,v22,v23,v31,v32,v33] = vertices;
+let triangulo1 = new Triangulo(v11,v12,v13);
+let triangulo2 = new Triangulo(v21,v22,v23);
+let triangulo3 = new Triangulo(v31,v32,v33);
 console.log("Triângulo 1 e 2 são iguais?", triangulo1.equals(triangulo2));
+console.log("Triângulo 1 e 3 são iguais?", triangulo1.equals(triangulo3));
 console.log(`O perímetro do triângulo 1 é: ${triangulo1.perimetro}`);
 console.log(`O perímetro do triângulo 2 é: ${triangulo2.perimetro}`);
+console.log(`O perímetro do triângulo 3 é: ${triangulo3.perimetro}`)
 console.log(`O tipo do triângulo 1 é: ${triangulo1.tipo()}`);
 console.log(`O tipo do triângulo 2 é: ${triangulo2.tipo()}`);
+console.log(`O tipo do triângulo 3 é: ${triangulo3.tipo()}`);
 console.log(`A área do triângulo 1 é: ${triangulo1.area}`);
 console.log(`A área do triângulo 2 é: ${triangulo2.area}`);
+console.log(`A área do triângulo 3 é: ${triangulo3.area}`);
