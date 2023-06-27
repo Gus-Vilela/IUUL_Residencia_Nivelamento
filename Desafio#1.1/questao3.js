@@ -53,7 +53,7 @@ do{
     vertices.push(new Vertice(Number(x),Number(y)));
     y = prompt("Deseja adicionar mais um vértice? (s/n)");
 }while(y === 's' || y === 'S');
-console.log(...vertices)
+
 let poligono = new Poligono(...vertices);
 console.log(`O perímetro do polígono é: ${poligono.perimetro}`);
 console.log(`O polígono tem ${poligono.qtdVertices} vértices`);
