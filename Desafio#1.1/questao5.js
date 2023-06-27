@@ -2,6 +2,7 @@
 import PromptSync from 'prompt-sync';
 const prompt = PromptSync({  sigint: true  });
 
+//classe cliente
 class Cliente{
   #nome;
   #cpf;
@@ -18,13 +19,14 @@ class Cliente{
     this.#estadoCivil = estadoCivil;
     this.#dependentes = dependentes;
   }
+  //verifica se a data de nascimento tem o formato correto e se o cliente tem pelo menos 18 anos
   static verificaIdade(dataNascimento){
     if(dataNascimento.match(/^\d{2}\/\d{2}\/\d{4}$/)){
-      let hoje = new Date();
+      let atual = new Date();
       let data = new Date(dataNascimento.split("/")[2], dataNascimento.split("/")[1] - 1, dataNascimento.split("/")[0]);
-      let idade = hoje.getFullYear() - data.getFullYear();
-      let mes = hoje.getMonth() - data.getMonth();
-      if (mes < 0 || (mes === 0 && hoje.getDate() < data.getDate())) {
+      let idade = atual.getFullYear() - data.getFullYear();
+      let difMes = atual.getMonth() - data.getMonth();
+      if (difMes < 0 || (difMes === 0 && hoje.getDate() < data.getDate())) {
         idade--;
       }
       // Verifica se a idade é maior ou igual a 18
