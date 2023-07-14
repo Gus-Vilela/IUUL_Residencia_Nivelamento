@@ -1,4 +1,3 @@
-"use strict";
 import { DateTime } from "luxon";
 
 export class Consulta {
@@ -7,7 +6,11 @@ export class Consulta {
   #paciente;
   #data;
   constructor(hinicio, hfim, paciente, data) {
-    if (this.#verificaHorario(hinicio, hfim) && this.#verificaData(data)) {
+    if (
+      this.#verificarFromatoData(data) &&
+      this.#verificarHorario(hinicio, hfim) &&
+      this.#verificarDataAtual(data, hinicio)
+    ) {
       this.#hinicio = hinicio;
       this.#hfim = hfim;
       this.#paciente = paciente;
@@ -26,62 +29,87 @@ export class Consulta {
   get data() {
     return this.#data;
   }
+  //retorna a duração da consulta em hh:mm e zera os minutos se for NaN
   get duracao() {
-    return this.#hfim - this.#hinicio;
+    let duracao = this.#calcularDuracao(this.#hinicio, this.#hfim).toFormat(
+      "hh:mm"
+    );
+    return duracao;
   }
-  #verificaFromatoData(data) {
+  //retorna o horário de início da consulta em hh:mm
+  get hIniForm() {
+    return this.#hinicio.slice(0, 2) + ":" + this.#hinicio.slice(2, 4);
+  }
+  //retorna o horário de fim da consulta em hh:mm
+  get hFimForm() {
+    return this.#hfim.slice(0, 2) + ":" + this.#hfim.slice(2, 4);
+  }
+
+  //verifica se o cpf do paciente é válido
+  #verificarFromatoData(data) {
     if (data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
       return true;
     } else {
       throw new Error("A data deve ter o formato DD/MM/AAAA");
     }
   }
-  #verificaData(data) {
-    if (this.#verificaFromatoData(data)) {
-      let hoje = DateTime.now();
-      let dataConsulta = DateTime.fromFormat(data, "dd/MM/yyyy");
-      if (dataConsulta > hoje) {
-        return true;
-      } else {
-        throw new Error("A data da consulta deve ser posterior à data atual");
-      }
-    }
-  }
-  #verificaFormatoHorario(hinicio, hfim) {
+  //verifica se o horário tem o formato correto HHMM
+  #verificarFormatoHorario(hinicio, hfim) {
     if (hinicio.match(/^\d{4}$/) && hfim.match(/^\d{4}$/)) {
       return true;
     } else {
       throw new Error("O horário deve ter o formato HHMM");
     }
   }
-  #verificaHorario15min(hinicio, hfim) {
-    if (
-      hinicio.match(/^[0-1][0-9][0-5][0,5]$/) &&
-      hfim.match(/^[0-1][0-9][0-5][0,5]$/)
-    ) {
-      return true;
-    } else {
-      throw new Error("O horário deve ser definido sempre de 15 em 15 minutos");
-    }
+  //calcula a duração da consulta
+  #calcularDuracao(hinicio, hfim) {
+    let inicio = DateTime.fromFormat(hinicio, "HHmm");
+    let fim = DateTime.fromFormat(hfim, "HHmm");
+    let duracao = fim.diff(inicio);
+    return duracao;
   }
-  #verificaIntervaloHorario(hinicio, hfim) {
-    if (hinicio >= 800 && hfim <= 1900) {
+  //verifica se o horário está definido de 15 em 15 minutos verificar a multiplicidade de 15 da diferença entre o horário inicial e final
+  #verificarHorario15min(hinicio, hfim) {
+    let duracao = this.#calcularDuracao(hinicio, hfim).toFormat("mm");
+    if (duracao % 15 === 0) {
+      return true;
+    }
+    throw new Error("O horário deve ser definido de 15 em 15 minutos");
+  }
+  //verifica se o horário está entre 08:00 e 19:00
+  #verificarIntervaloHorario(hinicio, hfim) {
+    if (hinicio >= 800 && hfim <= 2200) {
       return true;
     } else {
       throw new Error("O horário deve estar entre 08:00 e 19:00");
     }
   }
-  #verificaHorario(hinicio, hfim) {
+  //verifica se o horário inicial é anterior ao horário final
+  #verificarHorario(hinicio, hfim) {
     if (
-      this.#verificaFormatoHorario(hinicio, hfim) &&
-      this.#verificaHorario15min(hinicio, hfim) &&
-      this.#verificaIntervaloHorario(hinicio, hfim)
+      this.#verificarFormatoHorario(hinicio, hfim) &&
+      this.#verificarHorario15min(hinicio, hfim) &&
+      this.#verificarIntervaloHorario(hinicio, hfim)
     ) {
       if (hinicio < hfim) {
         return true;
       } else {
         throw new Error("O horário inicial deve ser menor que o final");
       }
+    }
+  }
+  //verifica se a data é posterior à data atual
+  #verificarDataAtual(data, hinicio) {
+    if (
+      DateTime.fromFormat(data + hinicio, "dd/MM/yyyyHHmm") >=
+      DateTime.now().set({
+        seconds: 0,
+        milliseconds: 0,
+      })
+    ) {
+      return true;
+    } else {
+      throw new Error("A data deve ser posterior à data atual");
     }
   }
 }

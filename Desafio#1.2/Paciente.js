@@ -8,10 +8,10 @@ export class Paciente {
 
   constructor(nome, cpf, dataNascimento) {
     if (
-      this.#verificaNome(nome) &&
-      this.#verificaFormatoData(dataNascimento) &&
-      this.#verificaIdade(dataNascimento) &&
-      this.#verificaCpf(cpf)
+      this.#verificarNome(nome) &&
+      this.#verificarFormatoData(dataNascimento) &&
+      this.#verificarIdade(dataNascimento) &&
+      this.#verificarCpf(cpf)
     ) {
       this.#nome = nome;
       this.#cpf = cpf;
@@ -28,19 +28,18 @@ export class Paciente {
     return this.#dataNascimento;
   }
   //calcula a idade do paciente com luxon
-  #calculaIdade(dataNascimento) {
+  #calcularIdade(dataNascimento) {
     let data = DateTime.fromFormat(dataNascimento, "dd/MM/yyyy");
     let idade = DateTime.now().diff(data, "years").toObject();
-    //retorna a idade em anos arredondada
     return Math.floor(idade.years);
   }
 
   get idade() {
-    return this.#calculaIdade(this.#dataNascimento);
+    return this.#calcularIdade(this.#dataNascimento);
   }
 
   //verifica se o nome tem 5 ou mais caracteres
-  #verificaNome(nome) {
+  #verificarNome(nome) {
     if (nome.length >= 5) {
       return true;
     } else {
@@ -48,7 +47,7 @@ export class Paciente {
     }
   }
   //verifica se a data de nascimento tem o formato correto DD/MM/AAAA
-  #verificaFormatoData(dataNascimento) {
+  #verificarFormatoData(dataNascimento) {
     if (dataNascimento.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
       return true;
     } else {
@@ -56,8 +55,8 @@ export class Paciente {
     }
   }
   //verifica se o o paciente tem pelo menos 13 anos
-  #verificaIdade(dataNascimento) {
-    if (this.#calculaIdade(dataNascimento) >= 13) {
+  #verificarIdade(dataNascimento) {
+    if (this.#calcularIdade(dataNascimento) >= 13) {
       return true;
     } else {
       throw new Error("O paciente deve ter pelo menos 13 anos");
@@ -65,7 +64,7 @@ export class Paciente {
   }
 
   //verificação completa do cpf incluindo o digito verificador
-  #verificaCpf(cpf) {
+  #verificarCpf(cpf) {
     let cpfLimpo = cpf.replace(".", "").replace(".", "").replace("-", "");
     let cpfArray = cpfLimpo.split("");
     let digito1 = 0;

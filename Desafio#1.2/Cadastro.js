@@ -1,5 +1,3 @@
-"use strict";
-import { Paciente } from "./Paciente.js";
 import { DateTime } from "luxon";
 import { Consulta } from "./Consulta.js";
 
@@ -33,22 +31,30 @@ export class Cadastro {
     }
   }
   //recebe um cpf e retorna o paciente correspondente
-  buscarPaciente(cpf) {
+  #buscarPaciente(cpf) {
     let paciente = this.#retornarPaciente(cpf);
     if (paciente) {
       return paciente;
+    } else {
+      throw new Error("Paciente não encontrado");
     }
-    throw new Error("Paciente não encontrado");
   }
-  //recebe um cpf e remove o paciente correspondente
+  //recebe um cpf e remove o paciente correspondente verficando consultas futuras
   removerPaciente(cpf) {
-    let paciente = this.#retornarPaciente(cpf);
+    let paciente = this.#buscarPaciente(cpf);
     if (paciente) {
-      let index = this.#pacientes.indexOf(paciente);
+      let consulta = this.#buscarConsulta(paciente);
+      if (consulta) {
+        throw new Error(
+          "O paciente tem uma consulta marcada para uma data futura"
+        );
+      }
+      let index = this.#pacientes.findIndex(
+        (pacienteAtual) => pacienteAtual.cpf === paciente.cpf
+      );
       this.#pacientes.splice(index, 1);
       return "Paciente removido com sucesso";
     }
-    throw new Error("Paciente não encontrado");
   }
   //verifica se já os horarios e datas das consultas não se sobrepõem
   #verificarSobreposicao(consulta) {
@@ -65,14 +71,22 @@ export class Cadastro {
       return false;
     }
   }
-  //recebe o paciente e devolve a sua consulta agendada
+
+  //recebe o paciente e devolve a sua consulta futura agendada
   #buscarConsulta(paciente) {
-    let consulta = this.#agenda.filter(
+    let consulta = this.#agenda.find(
       (consulta) =>
         consulta.paciente.cpf === paciente.cpf &&
-        DateTime.fromFormat(consulta.data, "dd/MM/yyyy") > DateTime.now()
+        DateTime.fromFormat(
+          consulta.data + consulta.hinicio,
+          "dd/MM/yyyyHHmm"
+        ) >=
+          DateTime.now().set({
+            seconds: 0,
+            milliseconds: 0,
+          })
     );
-    if (consulta.length > 0) {
+    if (consulta) {
       return consulta;
     }
     return false;
@@ -80,7 +94,7 @@ export class Cadastro {
 
   //recebe cpf e agenda uma consulta para o paciente correspondente
   agendarConsulta(cpf, hinicio, hfim, data) {
-    let paciente = this.buscarPaciente(cpf);
+    let paciente = this.#buscarPaciente(cpf);
     if (paciente) {
       let consulta = new Consulta(hinicio, hfim, paciente, data);
       if (this.#buscarConsulta(paciente)) {
@@ -95,55 +109,136 @@ export class Cadastro {
       return "Consulta agendada com sucesso";
     }
   }
-
-  //Cancelamento de um agendamento: são necessários CPF do paciente, data da consulta e hora inicial.
+  //verifica se a data tem o formato correto DD/MM/AAAA
+  #verificarFormData(data) {
+    if (data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+      return true;
+    } else {
+      throw new Error("A data deve ter o formato DD/MM/AAAA");
+    }
+  }
+  //verifica se o horário tem o formato correto HHMM
+  //recebe cpf, horario e data e cancela a consulta correspondente
   cancelarConsulta(cpf, hinicio, data) {
-    let paciente = this.buscarPaciente(cpf);
+    let paciente = this.#buscarPaciente(cpf);
     if (paciente) {
+      let hfim = Number(hinicio) + 15;
+      let consulta = new Consulta(hinicio, hfim.toString(), paciente, data);
       let index = this.#agenda.findIndex(
-        (consulta) =>
-          consulta.paciente.cpf === paciente.cpf &&
-          consulta.data === data &&
-          consulta.hinicio === hinicio
+        (consultaAtual) =>
+          consultaAtual.paciente.cpf === consulta.paciente.cpf &&
+          consultaAtual.data === consulta.data &&
+          consultaAtual.hinicio === consulta.hinicio
       );
       if (index != -1) {
         this.#agenda.splice(index, 1);
         return "Consulta cancelada com sucesso";
+      } else {
+        throw new Error("Consulta não encontrada");
       }
-      throw new Error("Consulta não encontrada");
     }
   }
-  /*  Listagem dos Pacientes
-a. A listagem de pacientes deve ser apresentada conforme o layout definido no final desse
-documento e pode estar ordenada de forma crescente por CPF ou nome, à escolha do
-usuário.
-b. Se o paciente possuir um agendamento futuro, os dados do agendamento devem ser
-apresentados abaixo dos dados do paciente.
-  */
-  listarPacientes(ordem) {
-    let pacientes = this.#pacientes;
-    if (ordem === "cpf") {
-      pacientes = pacientes.sort((a, b) => a.cpf - b.cpf);
-    } else if (ordem === "nome") {
-      pacientes = pacientes.sort((a, b) => {
+
+  //ordena os pacientes em ordem crescente de cpf ou nome
+  #ordenarPacientes(ordem) {
+    let pacientesOrdenados = this.#pacientes.sort((a, b) => {
+      if (ordem === "cpf") {
+        if (a.cpf > b.cpf) {
+          return 1;
+        } else if (a.cpf < b.cpf) {
+          return -1;
+        } else {
+          return 0;
+        }
+      } else if (ordem === "nome") {
         if (a.nome > b.nome) {
           return 1;
-        } else {
+        } else if (a.nome < b.nome) {
           return -1;
+        } else {
+          return 0;
         }
-      });
-    }
+      }
+    });
+    return pacientesOrdenados;
+  }
+  //imprime os pacientes
+  #imprimirPacientes(pacientes) {
     let lista = "";
     pacientes.forEach((paciente) => {
-      lista += `Nome: ${paciente.nome} CPF: ${paciente.cpf} Data de Nascimento: ${paciente.dataNascimento} \n`;
+      lista += `CPF: ${paciente.cpf} Nome: ${paciente.nome}  Dt.Nasc: ${paciente.dataNascimento} Idade: ${paciente.idade} \n`;
       let consulta = this.#buscarConsulta(paciente);
       if (consulta) {
-        consulta.forEach((consulta) => {
-          lista += `Data da consulta: ${consulta.data} Horário: ${consulta.hinicio} - ${consulta.hfim} \n`;
-        });
+        lista += `Agendado para: ${consulta.data} \n ${consulta.hIniForm} às ${consulta.hFimForm} \n`;
       }
-      lista += "\n";
     });
+    return lista;
+  }
+  //recebe uma ordem e lista os pacientes em ordem crescente de cpf ou nome
+  listarPacientes(ordem) {
+    let pacientes = this.#pacientes;
+    pacientes = this.#ordenarPacientes(ordem);
+    let lista = this.#imprimirPacientes(pacientes);
+    return lista;
+  }
+
+  //verifica se a data inicial é anterior a data final
+  #ordenarAgenda(agenda) {
+    let agendaOrdenada = agenda.sort((a, b) => {
+      if (a.data > b.data) {
+        return 1;
+      } else if (a.data < b.data) {
+        return -1;
+      } else {
+        if (a.hinicio > b.hinicio) {
+          return 1;
+        } else if (a.hinicio < b.hinicio) {
+          return -1;
+        } else {
+          return 0;
+        }
+      }
+    });
+    return agendaOrdenada;
+  }
+  //filtra a agenda entre as datas informadas
+  #filtrarAgenda(dataInicial, dataFinal) {
+    let agenda = this.#agenda.filter(
+      (consulta) =>
+        DateTime.fromFormat(consulta.data, "dd/MM/yyyy") >=
+          DateTime.fromFormat(dataInicial, "dd/MM/yyyy") &&
+        DateTime.fromFormat(consulta.data, "dd/MM/yyyy") <=
+          DateTime.fromFormat(dataFinal, "dd/MM/yyyy")
+    );
+    return agenda;
+  }
+  //imprime a agenda
+  #imprimirAgenda(agenda) {
+    let lista = "";
+    let dataAnterior = "";
+    agenda.forEach((consulta) => {
+      if (consulta.data != dataAnterior) {
+        lista += `Data: ${consulta.data} `;
+        dataAnterior = consulta.data;
+      }
+      lista += `H.Ini: ${consulta.hIniForm} H.fim: ${consulta.hFimForm} Tempo: ${consulta.duracao} `;
+      lista += `Nome: ${consulta.paciente.nome} Dt.Nasc.: ${consulta.paciente.dataNascimento}\n`;
+    });
+    return lista;
+  }
+  //recebe uma data inicial e uma data final e lista as consultas agendadas nesse período
+  listarAgenda(dataInicial, dataFinal) {
+    let agenda = this.#agenda;
+    if (dataInicial && dataFinal) {
+      if (
+        this.#verificarFormData(dataInicial) &&
+        this.#verificarFormData(dataFinal)
+      ) {
+        agenda = this.#filtrarAgenda(dataInicial, dataFinal);
+      }
+    }
+    agenda = this.#ordenarAgenda(agenda);
+    let lista = this.#imprimirAgenda(agenda);
     return lista;
   }
 }
